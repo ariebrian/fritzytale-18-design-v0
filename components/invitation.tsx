@@ -1,14 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  ArrowLeft,
-  ArrowRight,
-  CalendarDays,
-  MapPin,
-  QrCode,
-  Sparkles,
-} from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarDays, MapPin, QrCode } from 'lucide-react'
 import { LightParticles } from '@/components/light-particles'
 import { cn } from '@/lib/utils'
 
@@ -17,12 +10,12 @@ const BG_CONTENT = '/images/arcadia-content.jpg'
 
 const GUEST_NAME = 'fb1'
 
-type Step = 0 | 1 | 2
+type Step = 0 | 1
 
 export function Invitation() {
   const [step, setStep] = useState<Step>(0)
 
-  const next = () => setStep((s) => Math.min(2, s + 1) as Step)
+  const next = () => setStep((s) => Math.min(1, s + 1) as Step)
   const prev = () => setStep((s) => Math.max(0, s - 1) as Step)
 
   const background = step === 0 ? BG_LANDING : BG_CONTENT
@@ -75,8 +68,7 @@ export function Invitation() {
           <div className="relative flex h-full flex-col px-5 pb-[16%] pt-[18%] sm:px-6">
             <div className="flex flex-1 items-center justify-center">
               {step === 0 && <LandingStep key="s0" onOpen={next} />}
-              {step === 1 && <GreetingStep key="s1" />}
-              {step === 2 && <DetailsStep key="s2" />}
+              {step === 1 && <ContentStep key="s1" />}
             </div>
 
             {/* navigation */}
@@ -116,35 +108,29 @@ function LandingStep({ onOpen }: { onOpen: () => void }) {
   )
 }
 
-function GreetingStep() {
-  return (
-    <div className="flex w-full animate-fade-up items-center justify-center">
-      <div className="glass-dark w-full rounded-3xl px-6 py-8 text-center">
-        <p className="font-display text-lg tracking-wide text-foreground">
-          Dear, <span className="text-gold">{GUEST_NAME}</span>
-        </p>
-        <p className="mt-5 text-pretty text-base leading-relaxed text-foreground">
-          It is a pleasure for inviting you to
-        </p>
-        <p className="mt-2 text-pretty font-display text-xl font-medium leading-snug text-foreground">
-          Fritzy Rosmerian 18th Birthday Project
-        </p>
-        <Sparkles className="mx-auto mt-5 h-5 w-5 text-gold" />
-      </div>
-    </div>
-  )
-}
-
-function DetailsStep() {
+function ContentStep() {
   return (
     <div className="flex w-full animate-fade-up flex-col justify-center gap-3">
-      {/* when + where */}
+      {/* greeting */}
+      <div className="glass-dark rounded-2xl px-5 py-4 text-center">
+        <p className="font-display text-base tracking-wide text-foreground">
+          Dear, <span className="text-gold">{GUEST_NAME}</span>
+        </p>
+        <p className="mt-2 text-pretty text-sm leading-relaxed text-foreground/90">
+          It is a pleasure to invite you to
+        </p>
+        <p className="mt-1 text-pretty font-display text-base font-medium leading-snug text-foreground">
+          Fritzy Rosmerian 18th Birthday Project
+        </p>
+      </div>
+
+      {/* when + where + qr */}
       <div className="glass-dark rounded-2xl px-5 py-4">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-5 w-5 shrink-0 text-gold" />
           <div>
             <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">When</p>
-            <p className="font-display text-base font-medium text-foreground">
+            <p className="font-display text-sm font-medium text-foreground">
               Saturday, August 2nd 2026
             </p>
           </div>
@@ -153,26 +139,25 @@ function DetailsStep() {
           <MapPin className="h-5 w-5 shrink-0 text-gold" />
           <div>
             <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">Where</p>
-            <p className="font-display text-base font-medium text-foreground">
+            <p className="font-display text-sm font-medium text-foreground">
               CGV fX Sudirman, Lt 7
             </p>
           </div>
         </div>
-      </div>
 
-      {/* QR */}
-      <div className="glass-dark flex flex-col items-center rounded-2xl px-5 py-4">
-        <div className="grid h-24 w-24 place-items-center rounded-xl border border-dashed border-foreground/30 bg-foreground/5">
-          <QrCode className="h-12 w-12 text-foreground/80" />
+        <div className="mt-4 flex flex-col items-center border-t border-foreground/10 pt-4">
+          <div className="grid h-24 w-24 place-items-center rounded-xl border border-dashed border-foreground/30 bg-foreground/5">
+            <QrCode className="h-12 w-12 text-foreground/80" />
+          </div>
+          <p className="mt-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70">
+            Scan to check in
+          </p>
         </div>
-        <p className="mt-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70">
-          Scan to check in
-        </p>
       </div>
 
       {/* closing */}
-      <div className="glass-dark rounded-2xl border border-primary/70 px-5 py-4 text-center">
-        <p className="text-pretty text-base leading-relaxed text-foreground">
+      <div className="glass-dark rounded-2xl border border-primary/70 px-5 py-3 text-center">
+        <p className="text-pretty text-sm leading-relaxed text-foreground">
           We sincerely hope you can join us and{' '}
           <span className="text-gold">create magic together</span>
         </p>
@@ -206,7 +191,7 @@ function NavBar({
         </button>
 
         <div className="flex items-center gap-2" role="tablist" aria-label="Invitation pages">
-          {[0, 1, 2].map((i) => (
+          {[0, 1].map((i) => (
             <span
               key={i}
               aria-current={i === step}
@@ -221,7 +206,7 @@ function NavBar({
         <button
           type="button"
           onClick={onNext}
-          disabled={step === 2}
+          disabled={step === 1}
           aria-label="Next"
           className="grid h-8 w-8 place-items-center rounded-full text-foreground transition disabled:cursor-not-allowed disabled:opacity-30 hover:enabled:scale-110"
         >
