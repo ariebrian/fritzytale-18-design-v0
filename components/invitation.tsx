@@ -1,27 +1,35 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowLeft, ArrowRight, CalendarDays, MapPin, QrCode } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, ArrowRight, CalendarDays, MapPin } from 'lucide-react'
+import QRCode from 'react-qr-code'
 import { LightParticles } from '@/components/light-particles'
 import { cn } from '@/lib/utils'
+import type { InvitationData } from '@/lib/data/invitations'
 
-const BG_LANDING = '/images/arcadia-landing.jpg'
-const BG_CONTENT = '/images/arcadia-content.jpg'
-
-const GUEST_NAME = 'fb1'
+const BG_IMAGE = '/images/invitation-bg.png'
+const LOGO_IMAGE = '/images/invitation-logo.png'
 
 type Step = 0 | 1
 
-export function Invitation() {
+interface InvitationProps {
+  event: InvitationData['event']
+  guest: InvitationData['guest']
+}
+
+export function Invitation({ event, guest }: InvitationProps) {
   const [step, setStep] = useState<Step>(0)
+  const [origin, setOrigin] = useState('')
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   const next = () => setStep((s) => Math.min(1, s + 1) as Step)
   const prev = () => setStep((s) => Math.max(0, s - 1) as Step)
 
-  const background = step === 0 ? BG_LANDING : BG_CONTENT
-
   return (
-    <main className="relative flex min-h-svh items-center justify-center overflow-hidden bg-background px-3 py-4 sm:px-6 sm:py-8">
+    <main className="relative flex min-h-svh items-center justify-center overflow-hidden bg-background px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8">
       {/* ambient background glow */}
       <div
         aria-hidden
@@ -43,12 +51,11 @@ export function Invitation() {
           }}
         />
 
-        <article className="relative aspect-[2/3] max-h-[90svh] w-full overflow-hidden rounded-[2rem]">
-          {/* background image with crossfade */}
+        <article className="relative aspect-[2/3] max-h-[90svh] w-full overflow-hidden rounded-[2rem] [@media(max-height:520px)]:aspect-auto [@media(max-height:520px)]:max-h-none">
+          {/* background image, shared across both steps */}
           <div
-            key={background}
-            className="absolute inset-0 animate-fade-up bg-cover bg-center"
-            style={{ backgroundImage: `url(${background})` }}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${BG_IMAGE})` }}
           />
 
           {/* subtle center scrim so glass cards stay legible while keeping
@@ -64,11 +71,29 @@ export function Invitation() {
 
           <LightParticles />
 
+          {/* logo lockup, landing step only */}
+          {step === 0 && (
+            <div aria-hidden className="absolute inset-0 animate-float">
+              <img
+                src={LOGO_IMAGE}
+                alt=""
+                className="absolute inset-0 h-full w-full animate-fade-up object-cover"
+              />
+            </div>
+          )}
+
           {/* content */}
           <div className="relative flex h-full flex-col px-5 pb-[16%] pt-[18%] sm:px-6">
-            <div className="flex flex-1 items-center justify-center">
-              {step === 0 && <LandingStep key="s0" onOpen={next} />}
-              {step === 1 && <ContentStep key="s1" />}
+            <div className="flex flex-1 flex-col overflow-y-auto">
+              {/* m-auto centers the step when it fits, but falls back to
+                  top-aligned (rather than clipping the top) once content is
+                  taller than the available space */}
+              <div className="m-auto w-full">
+                {step === 0 && <LandingStep key="s0" guestName={guest.name} onOpen={next} />}
+                {step === 1 && (
+                  <ContentStep key="s1" guestName={guest.name} event={event} qrValue={`${origin}/admin/confirm-attendance?token=${guest.qr_code_token}`} />
+                )}
+              </div>
             </div>
 
             {/* navigation */}
@@ -82,13 +107,13 @@ export function Invitation() {
 
 /* ------------------------------- steps ------------------------------- */
 
-function LandingStep({ onOpen }: { onOpen: () => void }) {
+function LandingStep({ guestName, onOpen }: { guestName: string; onOpen: () => void }) {
   return (
     <div className="flex w-full animate-fade-up flex-col items-center gap-4 text-center">
       <div className="glass w-full rounded-2xl px-6 py-5">
         <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/70">Dear,</p>
-        <p className="mt-1 font-display text-2xl font-medium tracking-wide text-foreground">
-          {GUEST_NAME}
+        <p className="mt-1 break-words font-display text-2xl font-medium tracking-wide text-foreground">
+          {guestName}
         </p>
       </div>
 
@@ -100,7 +125,7 @@ function LandingStep({ onOpen }: { onOpen: () => void }) {
         <span className="font-display text-xl font-medium tracking-wide text-foreground">
           Open Invitation
         </span>
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/80 text-primary-foreground transition-transform duration-300 group-hover:translate-x-1">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/80 text-primary-foreground transition-transform duration-300 group-hover:translate-x-1">
           <ArrowRight className="h-4 w-4" />
         </span>
       </button>
@@ -108,46 +133,66 @@ function LandingStep({ onOpen }: { onOpen: () => void }) {
   )
 }
 
-function ContentStep() {
+function ContentStep({
+  guestName,
+  event,
+  qrValue,
+}: {
+  guestName: string
+  event: InvitationProps['event']
+  qrValue: string
+}) {
+  const eventDate = new Date(event.event_date)
+  const formattedDate = Number.isNaN(eventDate.getTime())
+    ? event.event_date
+    : new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }).format(eventDate)
+
   return (
     <div className="flex w-full animate-fade-up flex-col justify-center gap-3">
       {/* greeting */}
-      <div className="glass-dark rounded-2xl px-5 py-4 text-center">
-        <p className="font-display text-base tracking-wide text-foreground">
-          Dear, <span className="text-gold">{GUEST_NAME}</span>
+      <div className="glass rounded-2xl px-5 py-4 text-center">
+        <p className="break-words font-display text-base tracking-wide text-foreground">
+          Dear, <span className="text-gold">{guestName}</span>
         </p>
         <p className="mt-2 text-pretty text-sm leading-relaxed text-foreground/90">
           It is a pleasure to invite you to
         </p>
         <p className="mt-1 text-pretty font-display text-base font-medium leading-snug text-foreground">
-          Fritzy Rosmerian 18th Birthday Project
+          {event.title}
         </p>
       </div>
 
       {/* when + where + qr */}
-      <div className="glass-dark rounded-2xl px-5 py-4">
+      <div className="glass-strong rounded-2xl px-5 py-4">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-5 w-5 shrink-0 text-gold" />
-          <div>
+          <div className="min-w-0">
             <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">When</p>
-            <p className="font-display text-sm font-medium text-foreground">
-              Saturday, August 2nd 2026
+            <p className="break-words font-display text-sm font-medium text-foreground">
+              {formattedDate}
             </p>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-3">
-          <MapPin className="h-5 w-5 shrink-0 text-gold" />
-          <div>
-            <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">Where</p>
-            <p className="font-display text-sm font-medium text-foreground">
-              CGV fX Sudirman, Lt 7
-            </p>
+        {event.location && (
+          <div className="mt-3 flex items-center gap-3">
+            <MapPin className="h-5 w-5 shrink-0 text-gold" />
+            <div className="min-w-0">
+              <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">Where</p>
+              <p className="break-words font-display text-sm font-medium text-foreground">
+                {event.location}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mt-4 flex flex-col items-center border-t border-foreground/10 pt-4">
-          <div className="grid h-24 w-24 place-items-center rounded-xl border border-dashed border-foreground/30 bg-foreground/5">
-            <QrCode className="h-12 w-12 text-foreground/80" />
+          <div className="grid place-items-center rounded-xl border border-dashed border-foreground/30 bg-foreground/5 p-3">
+            <QRCode value={qrValue} size={96} level="H" fgColor="#f0f7f4" bgColor="transparent" />
           </div>
           <p className="mt-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70">
             Scan to check in
@@ -156,7 +201,7 @@ function ContentStep() {
       </div>
 
       {/* closing */}
-      <div className="glass-dark rounded-2xl border border-primary/70 px-5 py-3 text-center">
+      <div className="glass rounded-2xl border border-primary/70 px-5 py-3 text-center">
         <p className="text-pretty text-sm leading-relaxed text-foreground">
           We sincerely hope you can join us and{' '}
           <span className="text-gold">create magic together</span>

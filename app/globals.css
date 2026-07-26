@@ -14,7 +14,8 @@
   font-family: 'Monument Extended';
   src:
     url('/fonts/MonumentExtended-Regular.woff2') format('woff2'),
-    url('/fonts/MonumentExtended-Regular.woff') format('woff');
+    url('/fonts/MonumentExtended-Regular.woff') format('woff'),
+    url('/fonts/MonumentExtended-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -23,7 +24,8 @@
   font-family: 'Monument Extended';
   src:
     url('/fonts/MonumentExtended-Bold.woff2') format('woff2'),
-    url('/fonts/MonumentExtended-Bold.woff') format('woff');
+    url('/fonts/MonumentExtended-Bold.woff') format('woff'),
+    url('/fonts/MonumentExtended-Ultrabold.otf') format('opentype');
   font-weight: 700 900;
   font-style: normal;
   font-display: swap;
@@ -280,8 +282,13 @@
   animation: arc-fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.animate-float {
+  animation: arc-float 5s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
+  .animate-float,
   .arc-particle {
     animation: none !important;
   }

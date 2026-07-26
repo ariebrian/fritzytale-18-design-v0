@@ -1,5 +1,5 @@
-import { Invitation } from '@/components/invitation'
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return <Invitation />
+  redirect('/admin')
 }
