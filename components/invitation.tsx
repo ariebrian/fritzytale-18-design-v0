@@ -10,7 +10,7 @@ import type { InvitationData } from '@/lib/data/invitations'
 const BG_IMAGE = '/images/invitation-bg.png'
 const LOGO_IMAGE = '/images/invitation-logo.png'
 
-type Step = 0 | 1
+type Step = 0 | 1 | 2
 
 interface InvitationProps {
   event: InvitationData['event']
@@ -25,7 +25,7 @@ export function Invitation({ event, guest }: InvitationProps) {
     setOrigin(window.location.origin)
   }, [])
 
-  const next = () => setStep((s) => Math.min(1, s + 1) as Step)
+  const next = () => setStep((s) => Math.min(2, s + 1) as Step)
   const prev = () => setStep((s) => Math.max(0, s - 1) as Step)
 
   return (
@@ -52,7 +52,7 @@ export function Invitation({ event, guest }: InvitationProps) {
         />
 
         <article className="relative aspect-[2/3] max-h-[90svh] w-full overflow-hidden rounded-[2rem] [@media(max-height:520px)]:aspect-auto [@media(max-height:520px)]:max-h-none">
-          {/* background image, shared across both steps */}
+          {/* background image, shared across all steps */}
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${BG_IMAGE})` }}
@@ -90,8 +90,9 @@ export function Invitation({ event, guest }: InvitationProps) {
                   taller than the available space */}
               <div className="m-auto w-full">
                 {step === 0 && <LandingStep key="s0" guestName={guest.name} onOpen={next} />}
-                {step === 1 && (
-                  <ContentStep key="s1" guestName={guest.name} event={event} qrValue={`${origin}/admin/confirm-attendance?token=${guest.qr_code_token}`} />
+                {step === 1 && <ContentStep key="s1" guestName={guest.name} event={event} />}
+                {step === 2 && (
+                  <QRStep key="s2" qrValue={`${origin}/admin/confirm-attendance?token=${guest.qr_code_token}`} />
                 )}
               </div>
             </div>
@@ -136,11 +137,9 @@ function LandingStep({ guestName, onOpen }: { guestName: string; onOpen: () => v
 function ContentStep({
   guestName,
   event,
-  qrValue,
 }: {
   guestName: string
   event: InvitationProps['event']
-  qrValue: string
 }) {
   const eventDate = new Date(event.event_date)
   const formattedDate = Number.isNaN(eventDate.getTime())
@@ -167,7 +166,7 @@ function ContentStep({
         </p>
       </div>
 
-      {/* when + where + qr */}
+      {/* when + where */}
       <div className="glass-strong rounded-2xl px-5 py-4">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-5 w-5 shrink-0 text-gold" />
@@ -189,15 +188,6 @@ function ContentStep({
             </div>
           </div>
         )}
-
-        <div className="mt-4 flex flex-col items-center border-t border-foreground/10 pt-4">
-          <div className="grid place-items-center rounded-xl border border-dashed border-foreground/30 bg-foreground/5 p-3">
-            <QRCode value={qrValue} size={96} level="H" fgColor="#f0f7f4" bgColor="transparent" />
-          </div>
-          <p className="mt-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70">
-            Scan to check in
-          </p>
-        </div>
       </div>
 
       {/* closing */}
@@ -205,6 +195,29 @@ function ContentStep({
         <p className="text-pretty text-sm leading-relaxed text-foreground">
           We sincerely hope you can join us and{' '}
           <span className="text-gold">create magic together</span>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function QRStep({ qrValue }: { qrValue: string }) {
+  return (
+    <div className="flex w-full animate-fade-up flex-col justify-center gap-3">
+      {/* instruction */}
+      <div className="glass rounded-2xl px-5 py-5 text-center">
+        <p className="text-pretty font-display text-base font-medium leading-snug text-foreground">
+          Show this QR Code when you visit our project!
+        </p>
+      </div>
+
+      {/* qr */}
+      <div className="glass-dark flex flex-col items-center gap-3 rounded-2xl px-5 py-6">
+        <div className="grid place-items-center rounded-xl border border-dashed border-foreground/30 bg-foreground/5 p-3">
+          <QRCode value={qrValue} size={160} level="H" fgColor="#f0f7f4" bgColor="transparent" />
+        </div>
+        <p className="text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70">
+          Scan to check in
         </p>
       </div>
     </div>
@@ -236,7 +249,7 @@ function NavBar({
         </button>
 
         <div className="flex items-center gap-2" role="tablist" aria-label="Invitation pages">
-          {[0, 1].map((i) => (
+          {[0, 1, 2].map((i) => (
             <span
               key={i}
               aria-current={i === step}
@@ -251,7 +264,7 @@ function NavBar({
         <button
           type="button"
           onClick={onNext}
-          disabled={step === 1}
+          disabled={step === 2}
           aria-label="Next"
           className="grid h-8 w-8 place-items-center rounded-full text-foreground transition disabled:cursor-not-allowed disabled:opacity-30 hover:enabled:scale-110"
         >
