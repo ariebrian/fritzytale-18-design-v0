@@ -20,7 +20,7 @@ export default function InviteError({ error, reset }: { error: Error & { digest?
       />
       <div className="glass-dark relative flex max-w-sm flex-col items-center gap-4 rounded-2xl px-8 py-10 text-center">
         <ArcadiaEmblem className="h-10 w-10 text-gold" />
-        <h1 className="font-display text-2xl font-medium text-foreground">Something went wrong</h1>
+        <h1 className="font-invitation text-2xl font-medium text-foreground">Something went wrong</h1>
         <p className="text-pretty text-sm leading-relaxed text-foreground/70">
           We couldn&apos;t load this invitation right now. Please try again shortly.
         </p>

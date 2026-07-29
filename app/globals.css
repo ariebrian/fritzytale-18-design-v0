@@ -31,6 +31,17 @@
   font-display: swap;
 }
 
+/* Used only on the guest-facing invitation pages (see .font-invitation below) */
+@font-face {
+  font-family: 'Antic Didone';
+  src:
+    url('/fonts/AnticDidone-Regular.woff') format('woff'),
+    url('/fonts/AnticDidone-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -195,6 +206,10 @@
 
 @utility font-display {
   font-family: var(--font-display);
+}
+
+@utility font-invitation {
+  font-family: 'Antic Didone', var(--font-display), ui-serif, Georgia, serif;
 }
 
 @layer components {

@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, CalendarDays, MapPin } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ArrowRight, CalendarDays, Download, MapPin } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import { LightParticles } from '@/components/light-particles'
 import { cn } from '@/lib/utils'
+import { inlineResolvedColors } from '@/lib/resolve-modern-colors'
 import type { InvitationData } from '@/lib/data/invitations'
 
 const BG_IMAGE = '/images/invitation-bg.png'
@@ -20,6 +21,8 @@ interface InvitationProps {
 export function Invitation({ event, guest }: InvitationProps) {
   const [step, setStep] = useState<Step>(0)
   const [origin, setOrigin] = useState('')
+  const [downloading, setDownloading] = useState(false)
+  const articleRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     setOrigin(window.location.origin)
@@ -27,6 +30,39 @@ export function Invitation({ event, guest }: InvitationProps) {
 
   const next = () => setStep((s) => Math.min(2, s + 1) as Step)
   const prev = () => setStep((s) => Math.max(0, s - 1) as Step)
+
+  const handleDownload = async () => {
+    if (!articleRef.current || downloading) return
+    setDownloading(true)
+    try {
+      await document.fonts.ready
+      const { toPng } = await import('html-to-image')
+      // html-to-image can't parse our oklch()/color-mix() theme colors, and
+      // getComputedStyle serializes them as oklch()/lab() too (never plain
+      // rgb()), so inline pre-resolved rgba() equivalents just for the
+      // capture, then restore the live page's normal styles right after.
+      const restoreColors = inlineResolvedColors(articleRef.current)
+      let dataUrl: string
+      try {
+        dataUrl = await toPng(articleRef.current, {
+          pixelRatio: 2,
+          skipFonts: true,
+          filter: (node) => !(node instanceof HTMLElement && node.dataset.exportIgnore === 'true'),
+        })
+      } finally {
+        restoreColors()
+      }
+      const link = document.createElement('a')
+      const slug = (event.title || 'invitation').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      link.download = `${slug}-invitation.png`
+      link.href = dataUrl
+      link.click()
+    } catch (err) {
+      console.error('Failed to generate image:', err)
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <main className="relative flex min-h-svh items-center justify-center overflow-hidden bg-background px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8">
@@ -51,7 +87,10 @@ export function Invitation({ event, guest }: InvitationProps) {
           }}
         />
 
-        <article className="relative aspect-[2/3] max-h-[90svh] w-full overflow-hidden rounded-[2rem] [@media(max-height:520px)]:aspect-auto [@media(max-height:520px)]:max-h-none">
+        <article
+          ref={articleRef}
+          className="relative aspect-[2/3] max-h-[90svh] w-full overflow-hidden rounded-[2rem] [@media(max-height:520px)]:aspect-auto [@media(max-height:520px)]:max-h-none"
+        >
           {/* background image, shared across all steps */}
           <div
             className="absolute inset-0 bg-cover bg-center"
@@ -82,6 +121,21 @@ export function Invitation({ event, guest }: InvitationProps) {
             </div>
           )}
 
+          {/* download, details step only — lets guests save this page to post/share */}
+          {step === 1 && (
+            <button
+              type="button"
+              data-export-ignore="true"
+              onClick={handleDownload}
+              disabled={downloading}
+              aria-label="Download this page as an image"
+              title="Download this page as an image"
+              className="glass absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full text-foreground transition hover:scale-110 disabled:cursor-wait disabled:opacity-60"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+          )}
+
           {/* content */}
           <div className="relative flex h-full flex-col px-5 pb-[16%] pt-[18%] sm:px-6">
             <div className="flex flex-1 flex-col overflow-y-auto">
@@ -98,7 +152,9 @@ export function Invitation({ event, guest }: InvitationProps) {
             </div>
 
             {/* navigation */}
-            <NavBar step={step} onPrev={prev} onNext={next} />
+            <div data-export-ignore="true">
+              <NavBar step={step} onPrev={prev} onNext={next} />
+            </div>
           </div>
         </article>
       </div>
@@ -113,7 +169,7 @@ function LandingStep({ guestName, onOpen }: { guestName: string; onOpen: () => v
     <div className="flex w-full animate-fade-up flex-col items-center gap-4 text-center">
       <div className="glass w-full rounded-2xl px-6 py-5">
         <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/70">Dear,</p>
-        <p className="mt-1 break-words font-display text-2xl font-medium tracking-wide text-foreground">
+        <p className="mt-1 break-words font-invitation text-2xl font-medium tracking-wide text-foreground">
           {guestName}
         </p>
       </div>
@@ -123,7 +179,7 @@ function LandingStep({ guestName, onOpen }: { guestName: string; onOpen: () => v
         onClick={onOpen}
         className="glass-strong group flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-5 transition-transform duration-300 hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
-        <span className="font-display text-xl font-medium tracking-wide text-foreground">
+        <span className="font-invitation text-xl font-medium tracking-wide text-foreground">
           Open Invitation
         </span>
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/80 text-primary-foreground transition-transform duration-300 group-hover:translate-x-1">
@@ -155,13 +211,13 @@ function ContentStep({
     <div className="flex w-full animate-fade-up flex-col justify-center gap-3">
       {/* greeting */}
       <div className="glass rounded-2xl px-5 py-4 text-center">
-        <p className="break-words font-display text-base tracking-wide text-foreground">
+        <p className="break-words font-invitation text-base font-bold tracking-wide text-foreground">
           Dear, <span className="text-gold">{guestName}</span>
         </p>
         <p className="mt-2 text-pretty text-sm leading-relaxed text-foreground/90">
           It is a pleasure to invite you to
         </p>
-        <p className="mt-1 text-pretty font-display text-base font-medium leading-snug text-foreground">
+        <p className="mt-1 text-pretty font-invitation text-base font-bold leading-snug text-foreground">
           {event.title}
         </p>
       </div>
@@ -172,7 +228,7 @@ function ContentStep({
           <CalendarDays className="h-5 w-5 shrink-0 text-gold" />
           <div className="min-w-0">
             <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">When</p>
-            <p className="break-words font-display text-sm font-medium text-foreground">
+            <p className="break-words font-invitation text-sm font-bold text-foreground">
               {formattedDate}
             </p>
           </div>
@@ -182,7 +238,7 @@ function ContentStep({
             <MapPin className="h-5 w-5 shrink-0 text-gold" />
             <div className="min-w-0">
               <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">Where</p>
-              <p className="break-words font-display text-sm font-medium text-foreground">
+              <p className="break-words font-invitation text-sm font-bold text-foreground">
                 {event.location}
               </p>
             </div>
@@ -206,7 +262,7 @@ function QRStep({ qrValue }: { qrValue: string }) {
     <div className="flex w-full animate-fade-up flex-col justify-center gap-3">
       {/* instruction */}
       <div className="glass rounded-2xl px-5 py-5 text-center">
-        <p className="text-pretty font-display text-base font-medium leading-snug text-foreground">
+        <p className="text-pretty font-invitation text-base font-medium leading-snug text-foreground">
           Show this QR Code when you visit our project!
         </p>
       </div>
