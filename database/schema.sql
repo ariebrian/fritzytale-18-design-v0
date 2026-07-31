@@ -41,7 +41,7 @@ CREATE TABLE guests (
   event_id UUID REFERENCES events(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   contact TEXT,
-  guest_type TEXT NOT NULL CHECK (guest_type IN ('fanbase', 'donor')),
+  guest_type TEXT NOT NULL CHECK (guest_type IN ('fanbase', 'donor', 'member', 'guest')),
   fanbase_id UUID REFERENCES fanbases(id),
   donor_id UUID REFERENCES donors(id),
   qr_code_token TEXT UNIQUE NOT NULL,

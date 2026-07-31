@@ -23,6 +23,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid QR code' }, { status: 404 })
     }
 
+    // Member/guest QR codes are reusable — always report success without
+    // enforcing single-use or recording an attendance log.
+    const isRepeatable = guest.guest_type === 'member' || guest.guest_type === 'guest'
+
+    if (isRepeatable) {
+      return NextResponse.json({ message: 'Checked in successfully', guest })
+    }
+
     if (guest.checked_in) {
       return NextResponse.json({ error: 'Guest already checked in', guest }, { status: 400 })
     }

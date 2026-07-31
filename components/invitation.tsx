@@ -19,21 +19,31 @@ interface InvitationProps {
 }
 
 export function Invitation({ event, guest }: InvitationProps) {
+  // Fanbase guests don't check in via QR, so they skip the 3rd page entirely.
+  const maxStep: Step = guest.guest_type === 'fanbase' ? 1 : 2
+
   const [step, setStep] = useState<Step>(0)
   const [origin, setOrigin] = useState('')
   const [downloading, setDownloading] = useState(false)
   const articleRef = useRef<HTMLElement>(null)
+  const logoOverlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setOrigin(window.location.origin)
   }, [])
 
-  const next = () => setStep((s) => Math.min(2, s + 1) as Step)
+  const next = () => setStep((s) => Math.min(maxStep, s + 1) as Step)
   const prev = () => setStep((s) => Math.max(0, s - 1) as Step)
 
   const handleDownload = async () => {
     if (!articleRef.current || downloading) return
     setDownloading(true)
+    // The logo lockup only ever renders live on the landing page — for the
+    // downloaded image of the details page, briefly reveal it so the
+    // exported PNG carries the same top branding, then hide it again.
+    const logoEl = logoOverlayRef.current
+    const revealedLogo = logoEl?.classList.contains('hidden') ?? false
+    if (revealedLogo) logoEl!.classList.remove('hidden')
     try {
       await document.fonts.ready
       const { toPng } = await import('html-to-image')
@@ -44,9 +54,17 @@ export function Invitation({ event, guest }: InvitationProps) {
       const restoreColors = inlineResolvedColors(articleRef.current)
       let dataUrl: string
       try {
+        // The export is rendered as a fully isolated SVG document (loaded via
+        // a data URI <img>), so it has no access to our custom @font-face
+        // fonts unless they're embedded into that SVG. Without embedding,
+        // text falls back to a generic system serif *for layout purposes*,
+        // which wraps differently than the live page — hence skipFonts must
+        // stay off despite the extra embedding time it costs.
+        const rect = articleRef.current.getBoundingClientRect()
         dataUrl = await toPng(articleRef.current, {
-          pixelRatio: 2,
-          skipFonts: true,
+          pixelRatio: 1,
+          width: rect.width,
+          height: rect.height,
           filter: (node) => !(node instanceof HTMLElement && node.dataset.exportIgnore === 'true'),
         })
       } finally {
@@ -60,6 +78,7 @@ export function Invitation({ event, guest }: InvitationProps) {
     } catch (err) {
       console.error('Failed to generate image:', err)
     } finally {
+      if (revealedLogo) logoEl!.classList.add('hidden')
       setDownloading(false)
     }
   }
@@ -110,16 +129,23 @@ export function Invitation({ event, guest }: InvitationProps) {
 
           <LightParticles />
 
-          {/* logo lockup, landing step only */}
-          {step === 0 && (
-            <div aria-hidden className="absolute inset-0 animate-float">
-              <img
-                src={LOGO_IMAGE}
-                alt=""
-                className="absolute inset-0 h-full w-full animate-fade-up object-cover"
-              />
-            </div>
-          )}
+          {/* logo lockup — visible live only on the landing step; kept in the
+              DOM (hidden) on the details step so handleDownload can briefly
+              reveal it for the exported image, then hide it again */}
+          <div
+            ref={logoOverlayRef}
+            aria-hidden
+            className={cn('absolute inset-0', step === 0 ? 'animate-float' : 'hidden')}
+          >
+            <img
+              src={LOGO_IMAGE}
+              alt=""
+              className={cn(
+                'absolute inset-0 h-full w-full object-cover',
+                step === 0 && 'animate-fade-up',
+              )}
+            />
+          </div>
 
           {/* download, details step only — lets guests save this page to post/share */}
           {step === 1 && (
@@ -153,7 +179,7 @@ export function Invitation({ event, guest }: InvitationProps) {
 
             {/* navigation */}
             <div data-export-ignore="true">
-              <NavBar step={step} onPrev={prev} onNext={next} />
+              <NavBar step={step} maxStep={maxStep} onPrev={prev} onNext={next} />
             </div>
           </div>
         </article>
@@ -222,22 +248,22 @@ function ContentStep({
         </p>
       </div>
 
-      {/* when + where */}
+      {/* time + place */}
       <div className="glass-strong rounded-2xl px-5 py-4">
-        <div className="flex items-center gap-3">
-          <CalendarDays className="h-5 w-5 shrink-0 text-gold" />
+        <div className="flex items-start gap-3">
+          <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
           <div className="min-w-0">
-            <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">When</p>
+            <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">Time</p>
             <p className="break-words font-invitation text-sm font-bold text-foreground">
               {formattedDate}
             </p>
           </div>
         </div>
         {event.location && (
-          <div className="mt-3 flex items-center gap-3">
-            <MapPin className="h-5 w-5 shrink-0 text-gold" />
+          <div className="mt-4 flex items-start gap-3">
+            <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
             <div className="min-w-0">
-              <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">Where</p>
+              <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">Place</p>
               <p className="break-words font-invitation text-sm font-bold text-foreground">
                 {event.location}
               </p>
@@ -284,13 +310,17 @@ function QRStep({ qrValue }: { qrValue: string }) {
 
 function NavBar({
   step,
+  maxStep,
   onPrev,
   onNext,
 }: {
   step: Step
+  maxStep: Step
   onPrev: () => void
   onNext: () => void
 }) {
+  const dots = Array.from({ length: maxStep + 1 }, (_, i) => i)
+
   return (
     <div className="mt-3 flex justify-center">
       <div className="glass flex items-center gap-3 rounded-full px-3 py-2">
@@ -305,7 +335,7 @@ function NavBar({
         </button>
 
         <div className="flex items-center gap-2" role="tablist" aria-label="Invitation pages">
-          {[0, 1, 2].map((i) => (
+          {dots.map((i) => (
             <span
               key={i}
               aria-current={i === step}
@@ -320,7 +350,7 @@ function NavBar({
         <button
           type="button"
           onClick={onNext}
-          disabled={step === 2}
+          disabled={step === maxStep}
           aria-label="Next"
           className="grid h-8 w-8 place-items-center rounded-full text-foreground transition disabled:cursor-not-allowed disabled:opacity-30 hover:enabled:scale-110"
         >

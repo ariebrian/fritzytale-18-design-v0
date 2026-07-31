@@ -55,7 +55,7 @@ export default function GuestManagementPage() {
   const [newGuest, setNewGuest] = useState({
     name: '',
     contact: '',
-    guest_type: 'fanbase' as 'fanbase' | 'donor',
+    guest_type: 'fanbase' as Guest['guest_type'],
     fanbase_id: '',
     donor_id: '',
   })
@@ -198,7 +198,7 @@ export default function GuestManagementPage() {
                 onValueChange={(value) =>
                   setNewGuest({
                     ...newGuest,
-                    guest_type: (value ?? 'fanbase') as 'fanbase' | 'donor',
+                    guest_type: (value ?? 'fanbase') as Guest['guest_type'],
                     fanbase_id: '',
                     donor_id: '',
                   })
@@ -210,6 +210,8 @@ export default function GuestManagementPage() {
                 <SelectContent>
                   <SelectItem value="fanbase">Fanbase</SelectItem>
                   <SelectItem value="donor">Donor</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="guest">Guest</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -320,12 +322,16 @@ export default function GuestManagementPage() {
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{guest.guest_type}</Badge>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {guest.guest_type === 'fanbase' ? guest.fanbases?.name || '-' : guest.donors?.name || '-'}
-                  </div>
+                  {(guest.guest_type === 'fanbase' || guest.guest_type === 'donor') && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {guest.guest_type === 'fanbase' ? guest.fanbases?.name || '-' : guest.donors?.name || '-'}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell>
-                  {guest.checked_in ? (
+                  {guest.guest_type === 'member' || guest.guest_type === 'guest' ? (
+                    <Badge variant="outline">Reusable QR</Badge>
+                  ) : guest.checked_in ? (
                     <Badge className="bg-primary/15 text-primary">Checked In</Badge>
                   ) : (
                     <Badge variant="outline">Pending</Badge>

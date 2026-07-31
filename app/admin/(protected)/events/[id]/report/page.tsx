@@ -115,7 +115,9 @@ export default function AttendanceReportPage() {
                   <Badge variant="secondary">{guest.guest_type}</Badge>
                 </TableCell>
                 <TableCell>
-                  {guest.checked_in ? (
+                  {guest.guest_type === 'member' || guest.guest_type === 'guest' ? (
+                    <Badge variant="outline">Reusable QR</Badge>
+                  ) : guest.checked_in ? (
                     <Badge className="bg-primary/15 text-primary">Checked In</Badge>
                   ) : (
                     <Badge variant="outline">Pending</Badge>

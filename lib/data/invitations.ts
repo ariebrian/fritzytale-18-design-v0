@@ -10,13 +10,14 @@ export interface InvitationData {
   guest: {
     name: string
     qr_code_token: string
+    guest_type: 'fanbase' | 'donor' | 'member' | 'guest'
   }
 }
 
 export async function getInvitationByToken(token: string): Promise<InvitationData | null> {
   const { data: guest, error } = await supabase
     .from('guests')
-    .select('name, qr_code_token, events(title, description, event_date, location)')
+    .select('name, qr_code_token, guest_type, events(title, description, event_date, location)')
     .eq('qr_code_token', token)
     .single()
 
@@ -34,6 +35,7 @@ export async function getInvitationByToken(token: string): Promise<InvitationDat
     guest: {
       name: guest.name,
       qr_code_token: guest.qr_code_token,
+      guest_type: guest.guest_type,
     },
   }
 }

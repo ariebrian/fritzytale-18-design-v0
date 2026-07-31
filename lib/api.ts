@@ -19,7 +19,7 @@ export interface Guest {
   event_id: string
   name: string
   contact: string | null
-  guest_type: 'fanbase' | 'donor'
+  guest_type: 'fanbase' | 'donor' | 'member' | 'guest'
   fanbase_id: string | null
   donor_id: string | null
   qr_code_token: string
