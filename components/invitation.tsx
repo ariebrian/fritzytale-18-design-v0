@@ -60,9 +60,12 @@ export function Invitation({ event, guest }: InvitationProps) {
         // text falls back to a generic system serif *for layout purposes*,
         // which wraps differently than the live page — hence skipFonts must
         // stay off despite the extra embedding time it costs.
+        // pixelRatio is bumped for a crisp, shareable image; explicit
+        // width/height keep the source layout pinned to real CSS pixels so
+        // the higher pixelRatio only affects output sharpness, not layout.
         const rect = articleRef.current.getBoundingClientRect()
         dataUrl = await toPng(articleRef.current, {
-          pixelRatio: 1,
+          pixelRatio: 3,
           width: rect.width,
           height: rect.height,
           filter: (node) => !(node instanceof HTMLElement && node.dataset.exportIgnore === 'true'),
@@ -169,8 +172,12 @@ export function Invitation({ event, guest }: InvitationProps) {
                   top-aligned (rather than clipping the top) once content is
                   taller than the available space */}
               <div className="m-auto w-full">
-                {step === 0 && <LandingStep key="s0" guestName={guest.name} onOpen={next} />}
-                {step === 1 && <ContentStep key="s1" guestName={guest.name} event={event} />}
+                {step === 0 && (
+                  <LandingStep key="s0" guestName={guest.name} guestType={guest.guest_type} onOpen={next} />
+                )}
+                {step === 1 && (
+                  <ContentStep key="s1" guestName={guest.name} guestType={guest.guest_type} event={event} />
+                )}
                 {step === 2 && (
                   <QRStep key="s2" qrValue={`${origin}/admin/confirm-attendance?token=${guest.qr_code_token}`} />
                 )}
@@ -190,15 +197,25 @@ export function Invitation({ event, guest }: InvitationProps) {
 
 /* ------------------------------- steps ------------------------------- */
 
-function LandingStep({ guestName, onOpen }: { guestName: string; onOpen: () => void }) {
+function LandingStep({
+  guestName,
+  guestType,
+  onOpen,
+}: {
+  guestName: string
+  guestType: InvitationProps['guest']['guest_type']
+  onOpen: () => void
+}) {
   return (
     <div className="flex w-full animate-fade-up flex-col items-center gap-4 text-center">
-      <div className="glass w-full rounded-2xl px-6 py-5">
-        <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/70">Dear,</p>
-        <p className="mt-1 break-words font-invitation text-2xl font-medium tracking-wide text-foreground">
-          {guestName}
-        </p>
-      </div>
+      {guestType !== 'guest' && (
+        <div className="glass w-full rounded-2xl px-6 py-5">
+          <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/70">Dear,</p>
+          <p className="mt-1 break-words font-invitation text-2xl font-medium tracking-wide text-foreground">
+            {guestName}
+          </p>
+        </div>
+      )}
 
       <button
         type="button"
@@ -218,17 +235,22 @@ function LandingStep({ guestName, onOpen }: { guestName: string; onOpen: () => v
 
 function ContentStep({
   guestName,
+  guestType,
   event,
 }: {
   guestName: string
+  guestType: InvitationProps['guest']['guest_type']
   event: InvitationProps['event']
 }) {
   const eventDate = new Date(event.event_date)
+  // Short weekday/month (e.g. "Sun, Aug 2, 2026") — long form ("Sunday,
+  // August 2, 2026") was prone to wrapping across two lines in the
+  // downloaded image, especially once bolded.
   const formattedDate = Number.isNaN(eventDate.getTime())
     ? event.event_date
     : new Intl.DateTimeFormat('en-US', {
-        weekday: 'long',
-        month: 'long',
+        weekday: 'short',
+        month: 'short',
         day: 'numeric',
         year: 'numeric',
       }).format(eventDate)
@@ -237,10 +259,17 @@ function ContentStep({
     <div className="flex w-full animate-fade-up flex-col justify-center gap-3">
       {/* greeting */}
       <div className="glass rounded-2xl px-5 py-4 text-center">
-        <p className="break-words font-invitation text-base font-bold tracking-wide text-foreground">
-          Dear, <span className="text-gold">{guestName}</span>
-        </p>
-        <p className="mt-2 text-pretty text-sm leading-relaxed text-foreground/90">
+        {guestType !== 'guest' && (
+          <p className="break-words font-invitation text-base font-bold tracking-wide text-foreground">
+            Dear, <span className="text-gold">{guestName}</span>
+          </p>
+        )}
+        <p
+          className={cn(
+            'text-pretty text-sm leading-relaxed text-foreground/90',
+            guestType !== 'guest' && 'mt-2',
+          )}
+        >
           It is a pleasure to invite you to
         </p>
         <p className="mt-1 text-pretty font-invitation text-base font-bold leading-snug text-foreground">
