@@ -285,7 +285,7 @@ function ContentStep({
           <div className="min-w-0">
             <p className="text-[0.6rem] uppercase tracking-[0.25em] text-foreground/60">Time</p>
             <p className="break-words font-invitation text-sm font-bold text-foreground">
-              {formattedDate}
+              {formattedDate} • 15.00 - 20.00
             </p>
           </div>
         </div>
