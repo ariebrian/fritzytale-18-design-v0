@@ -19,10 +19,11 @@ export interface Guest {
   event_id: string
   name: string
   contact: string | null
-  guest_type: 'fanbase' | 'donor' | 'member' | 'guest'
+  guest_type: 'fanbase' | 'donor' | 'member' | 'guest' | 'general'
   fanbase_id: string | null
   donor_id: string | null
   qr_code_token: string
+  slug: string
   checked_in: boolean
   checked_in_at: string | null
   created_at: string

@@ -19,8 +19,9 @@ interface InvitationProps {
 }
 
 export function Invitation({ event, guest }: InvitationProps) {
-  // Fanbase guests don't check in via QR, so they skip the 3rd page entirely.
-  const maxStep: Step = guest.guest_type === 'fanbase' ? 1 : 2
+  // Fanbase and general guests don't check in via QR, so they skip the 3rd page entirely.
+  const maxStep: Step =
+    guest.guest_type === 'fanbase' || guest.guest_type === 'general' ? 1 : 2
 
   const [step, setStep] = useState<Step>(0)
   const [origin, setOrigin] = useState('')
@@ -208,7 +209,7 @@ function LandingStep({
 }) {
   return (
     <div className="flex w-full animate-fade-up flex-col items-center gap-4 text-center">
-      {guestType !== 'guest' && (
+      {guestType !== 'guest' && guestType !== 'general' && (
         <div className="glass w-full rounded-2xl px-6 py-5">
           <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/70">Dear,</p>
           <p className="mt-1 break-words font-invitation text-2xl font-medium tracking-wide text-foreground">
@@ -259,7 +260,7 @@ function ContentStep({
     <div className="flex w-full animate-fade-up flex-col justify-center gap-3">
       {/* greeting */}
       <div className="glass rounded-2xl px-5 py-4 text-center">
-        {guestType !== 'guest' && (
+        {guestType !== 'guest' && guestType !== 'general' && (
           <p className="break-words font-invitation text-base font-bold tracking-wide text-foreground">
             Dear, <span className="text-gold">{guestName}</span>
           </p>
@@ -267,7 +268,7 @@ function ContentStep({
         <p
           className={cn(
             'text-pretty text-sm leading-relaxed text-foreground/90',
-            guestType !== 'guest' && 'mt-2',
+            guestType !== 'guest' && guestType !== 'general' && 'mt-2',
           )}
         >
           It is a pleasure to invite you to

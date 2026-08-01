@@ -21,21 +21,8 @@ export const metadata: Metadata = {
     'An open invitation to Fritzy Rosmerian\u2019s 18th Birthday Project. Saturday, August 2nd 2026 at CGV fX Sudirman.',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/logo.png',
+    apple: '/logo.png',
   },
 }
 

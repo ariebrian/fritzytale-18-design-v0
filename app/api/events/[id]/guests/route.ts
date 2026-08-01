@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { supabase } from '@/lib/supabase'
 import { requireSession } from '@/lib/session'
+import { uniqueSlug } from '@/lib/slug'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { unauthorized } = await requireSession()
@@ -47,6 +48,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const qr_code_token = uuidv4()
 
+    let slugBase = name
+    if (guest_type === 'fanbase') {
+      const { data: fanbase } = await supabase.from('fanbases').select('name').eq('id', fanbase_id).single()
+      if (fanbase) slugBase = fanbase.name
+    } else if (guest_type === 'donor') {
+      const { data: donor } = await supabase.from('donors').select('name').eq('id', donor_id).single()
+      if (donor) slugBase = donor.name
+    }
+
+    const { data: existingSlugs } = await supabase.from('guests').select('slug').not('slug', 'is', null)
+    const taken = new Set((existingSlugs ?? []).map((g) => g.slug as string))
+    const slug = uniqueSlug(slugBase, taken)
+
     const { data, error } = await supabase
       .from('guests')
       .insert({
@@ -57,6 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         fanbase_id: guest_type === 'fanbase' ? fanbase_id : null,
         donor_id: guest_type === 'donor' ? donor_id : null,
         qr_code_token,
+        slug,
       })
       .select()
       .single()

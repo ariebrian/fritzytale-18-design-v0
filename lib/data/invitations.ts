@@ -10,18 +10,30 @@ export interface InvitationData {
   guest: {
     name: string
     qr_code_token: string
-    guest_type: 'fanbase' | 'donor' | 'member' | 'guest'
+    guest_type: 'fanbase' | 'donor' | 'member' | 'guest' | 'general'
   }
 }
 
-export async function getInvitationByToken(token: string): Promise<InvitationData | null> {
-  const { data: guest, error } = await supabase
-    .from('guests')
-    .select('name, qr_code_token, guest_type, events(title, description, event_date, location)')
-    .eq('qr_code_token', token)
-    .single()
+const GUEST_SELECT = 'name, qr_code_token, guest_type, events(title, description, event_date, location)'
 
-  if (error || !guest) return null
+export async function getInvitationBySlug(identifier: string): Promise<InvitationData | null> {
+  const { data: bySlug } = await supabase
+    .from('guests')
+    .select(GUEST_SELECT)
+    .eq('slug', identifier)
+    .maybeSingle()
+
+  const guest =
+    bySlug ??
+    (
+      await supabase
+        .from('guests')
+        .select(GUEST_SELECT)
+        .eq('qr_code_token', identifier)
+        .maybeSingle()
+    ).data
+
+  if (!guest) return null
 
   const event = guest.events as unknown as InvitationData['event']
 

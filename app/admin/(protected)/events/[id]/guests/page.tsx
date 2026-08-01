@@ -212,6 +212,7 @@ export default function GuestManagementPage() {
                   <SelectItem value="donor">Donor</SelectItem>
                   <SelectItem value="member">Member</SelectItem>
                   <SelectItem value="guest">Guest</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -347,7 +348,7 @@ export default function GuestManagementPage() {
                 </TableCell>
                 <TableCell>
                   <a
-                    href={`${getOrigin()}/invite/${guest.qr_code_token}`}
+                    href={`${getOrigin()}/invite/${guest.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-primary hover:underline"
